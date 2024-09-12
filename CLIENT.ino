@@ -1,163 +1,101 @@
-/*
- * Rui Santos 
- * Complete Project Details https://randomnerdtutorials.com
- */
+// ---------------- Water Level Sensor 1 Connection ----------------
+#define wl_sens_pwer_1 12
+#define wl_sens_sig_1 13
 
-/*     ARDUINO      GPS      
-    HWSerial RX -> TX
-    HWSerial TX -> RX
-*/
+// ---------------- Water Level Sensor 2 Connection ----------------
+#define wl_sens_pwer_2 14
+#define wl_sens_sig_2 27
 
-/*      ARDUINO     GSM
-            RX -> 9
-            TX -> 10
-*/
+// ---------------- Water Level Sensor 3 Connection ----------------
+#define wl_sens_pwer_1 12
+#define wl_sens_sig_1 13
 
+// ---------------- Water Level Sensor 4 Connection ----------------
+#define wl_sens_pwer_1 12
+#define wl_sens_sig_1 13
 
-//#include <SoftwareSerial.h>
-#include <TinyGPS++.h>
-#include <NewPing.h>
+int value = 0;
 
-// Buzzer Connection
-const int buzzer = 9    
+bool islevel1 = false;
+bool islevel2 = false;
+bool islevel3 = false;
+bool islevel4 = false;
 
-// Ultrasonic Sensor Connection
-const int trig = X;
-const int echo = X;
-const float distance = 200.0;   // Max distance of what the sensor should read (MAX VALUE: 500cm)
-NewPing sonar(trig, echo, distance)
+int level1 = 0;
+int level2 = 0;
 
-// Distance of the container when it is empty
-const float originalDistance = X;
-
-// Distance of each levels
-const float firstLevel = 0.0;
-const float secondLevel = 0.0;
-const float thirdLevel = 0.0;
-
-/* ---------- WIFI Name & Password ---------- */
-const char* ssid = "XXXXXXXXXXX";
-const char* password = "XXXXXXXXXXXXx";
-
-
-void setup(){  
-  // Serial Monitor
+void setup() {
   Serial.begin(9600);
+  pinMode(wl_sens_pwer_1,OUTPUT);
+  digitalWrite(wl_sens_pwer_1,LOW);
 
-  Serial1.begin(9600);
+  pinMode(wl_sens_pwer_2,OUTPUT);
+  digitalWrite(wl_sens_pwer_2,LOW);
 
-  // GSM Module Initialization
-  Serial2.begin(9600);
-
-  // Buzzer Initialization
-  pinMode(buzzer, 1000);
-
-  Serial.println("Setting up.....");
-  delay(500);
-
-  Serial2.println("AT"); //Once the handshake test is successful, it will back to OK
-  delay(50);
+  Serial.println("Initializing.....");
   
-  Serial2.println("AT+CMGF=1"); // Configuring TEXT mode
-  delay(50);
-
-  Serial2.println("AT+CMGS=\"XXXXXXXX\"\r");      // Input Cellphone Number here.
-  delay(50);
-
-  WiFi.mode(WIFI_STA);
-  if (initWifi()){
-    internet_connected = true;
-    Serial.println("Internet Connected");
-  }
 }
 
-void loop(){
+void loop() {
 
-  float waterLevel = 0.0;
+  if(islevel1 == false){
+    level1 = waterSensorReading_1();
+    Serial.print("WL Sensor 1: ");
+    Serial.println(level1);
 
-  waterLevel = measureDistance();
-  waterLevel = originalDistance - waterLevel;
+    if(level1 > 2000){
+      islevel1 = true;
+//      pinMode(wl_sens_pwer_1,INPUT);
+      delay(5000);
+    }
+  } else if(!islevel2){
+    level2 = waterSensorReading_2();
+    Serial.print("WL Sensor 2: ");
+    Serial.println(level2);
 
-  if(waterLevel > firstLevel && waterLevel < secondLevel - 20.0){
-    sendSms(waterLevel);
-  } else if(waterLevel > secondLevel){
-    sendSmms(waterLevel);
-  } else if (waterLevel >
-  
-  
-
-}
-   
-void sendSms(float waterLevel){
-  Serial2.listen();
-  Serial2.println("AT");
-  Serial2.println("AT+CMGF=1\r");
-  delay(50);
-
-  Serial2.println("AT+CMGS=\"XXXXXXXXXX\"\r");    // Enter Number Here
-  delay(50);
-
-  Serial2.print("Water Level is at: ");
-  Serial2.println(waterLevel);
-  
-  Serial2.write(0x1A);
-}
-
-float measureDistance(){
-  float duration = sonar.ping();
-  float distance_cm = sonar.convert_cm(duration);
-  distance = distance_cm / 2.54;
-  return distance;
-}
-
-void checkGSMStatus(){
-  while(gsm_signalCheck != 1){
-    delay(500);
-    Serial2.println("AT");
-    delay(100);
-    Serial2.println("AT+CMGF=1\r");
-    delay(100);
-    Serial2.println("AT+CSQ");
-    delay(500);
-
-    String response = readSerial();
-
-    if(response.indexOf("+CSQ:") != 1){
-      int rssi = parseRSSI(response);
-
-      Serial.print("RSSI: ");
-      Serial.println(rssi);
-
-      // Check if RSSI has signal
-      if(rssi >= 8){
-        Serial.println("GSM HAS SIGNAL");
-        gsm_signalCheck = true;
-      } else {
-        Serial.println("NO GSM SIGNAL");
-      }
-    } else {
-      Serial.println("Failed to get signal Strength");
+    if(level2 > 2000){
+      islevel2 = true;
     }
   }
+
 }
 
-String readSerial(){
-  String responseGSM = "";
-  while(Serial2.available()){
-    char c = Serial2.read();
-    responseGSM += c;
-  }
-
-  return responseGSM;
+int waterSensorReading_1()
+{
+  digitalWrite(wl_sens_pwer_1,HIGH);
+  delay(10);
+  value=analogRead(wl_sens_sig_1);
+  delay(10);
+  digitalWrite(wl_sens_pwer_1,LOW);
+  return value;
 }
 
-bool initWifi(){
-  Serial.println("\r\nConnecting to: " + String(ssid));
-  WiFi.begin(ssid, password);
-  while(WiFi.status() != WL_CONNECTED){
-    delay(500);
-    Serial.print(".");
-  }
-
-  return true;
+int waterSensorReading_2()
+{
+  digitalWrite(wl_sens_pwer_2,HIGH);
+  delay(10);
+  value=analogRead(wl_sens_sig_2);
+  delay(10);
+  digitalWrite(wl_sens_pwer_2,LOW);
+  return value;
 }
+
+//int waterSensorReading_3()
+//{
+//  digitalWrite(wl_sens_pwer_3,HIGH);
+//  delay(10);
+//  value=analogRead(wl_sens_sig_3);
+//  delay(10);
+//  digitalWrite(wl_sens_pwer_3,LOW);
+//  return value;
+//}
+//
+//int waterSensorReading_2()
+//{
+//  digitalWrite(wl_sens_pwer_4,HIGH);
+//  delay(10);
+//  value=analogRead(wl_sens_sig_4);
+//  delay(10);
+//  digitalWrite(wl_sens_pwer_4,LOW);
+//  return value;
+//}
